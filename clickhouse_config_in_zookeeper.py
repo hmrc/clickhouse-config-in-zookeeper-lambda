@@ -24,7 +24,20 @@ def lambda_handler(event, context):
     return 'Hello World'
 
 def get_clickhouse_cluster_definition(ec2_client):
-    return ""
+    response = ec2_client.describe_instances(Filters=[
+        {
+            'Name': 'tag-key',
+            'Values': [
+                'clickhouse-server'
+            ]
+        }
+    ])
+
+    result = {}
+
+    for i in response['Reservations']['Instances']:
+        filter(lambda x: x['Key'] == 'shard_name', i['Tags'])[0]
+        result[i['Tags']] = my_dict.get(some_key, 0) + 1
 
 
 def get_zookeeper_client(ec2_client):
