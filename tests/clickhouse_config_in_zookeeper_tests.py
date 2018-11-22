@@ -250,27 +250,66 @@ class GetClickhouseClusterDefinition(unittest.TestCase):
 
 class LambdaHandler(unittest.TestCase):
 
-    @patch('clickhouse_config_in_zookeeper.boto3')
-    def test_get_all_clickhouse_instances(self, mock_boto3):
-        mock_client=MagicMock()
-        mock_boto3.client = MagicMock(return_value=mock_client)
+    @patch('clickhouse_config_in_zookeeper.get_clickhouse_cluster_definition')
+    @patch('clickhouse_config_in_zookeeper.get_zookeeper_client')
+    @patch('clickhouse_config_in_zookeeper.get_ec2_client')
+    def test_should_ensure_zookeeper_path_exists_for_remote_servers(self,
+                                                                    mock_get_ec2_client,
+                                                                    mock_get_zookeeper_client,
+                                                                    mock_get_clickhouse_cluster_definition):
+        zookeeper = MagicMock()
+        mock_get_zookeeper_client.return_value = zookeeper
 
         lambda_handler({}, {})
 
-        mock_client.describe_instances.assert_called_with(Filters=[
-            {
-                'Name': 'tag-key',
-                'Values': [
-                    'clickhouse-server'
-                ]
-            }
-        ])
+        zookeeper.ensure_path.assert_called_with('clickhouse.config.remote_servers')
 
-    @patch('clickhouse_config_in_zookeeper.boto3')
-    def test_all_private_ips_and_shards_matching_clickhouse_server_added_to_zookeeper(self, mock_boto3):
-        mock_client=MagicMock()
-        mock_boto3.client = MagicMock(return_value=mock_client)
+    @patch('clickhouse_config_in_zookeeper.get_clickhouse_cluster_definition', return_value='pumpkins')
+    @patch('clickhouse_config_in_zookeeper.get_zookeeper_client')
+    @patch('clickhouse_config_in_zookeeper.get_ec2_client')
+    def test_all_private_ips_and_shards_matching_clickhouse_server_added_to_zookeeper(self,
+                                                                                      mock_get_ec2_client,
+                                                                                      mock_get_zookeeper_client,
+                                                                                      mock_get_clickhouse_cluster_definition):
+        ec2_client = MagicMock()
+        mock_get_ec2_client.return_value = ec2_client
+        shard_config = {'shard_1': ['172.26.39.30', '172.26.99.237'],
+                               'shard_2': ['172.26.32.16', '172.26.97.29']}
+        mock_get_clickhouse_cluster_definition.return_value = shard_config
+        zookeeper = MagicMock()
+        mock_get_zookeeper_client.return_value = zookeeper
 
-        sampleResponse = {}
-        mock_client.describe_instances = MagicMock(return_value=sampleResponse)
+        lambda_handler({}, {})
+
+        remote_servers_xml = b"""<hmrc_data_cluster>
+  <shard>
+    <internal_replication>true</internal_replication>
+    <replica>
+      <default_database>graphite</default_database>
+      <host>172.26.39.30</host>
+      <port>9000</port>
+    </replica>
+    <replica>
+      <default_database>graphite</default_database>
+      <host>172.26.99.237</host>
+      <port>9000</port>
+    </replica>
+  </shard>
+  <shard>
+    <internal_replication>true</internal_replication>
+    <replica>
+      <default_database>graphite</default_database>
+      <host>172.26.32.16</host>
+      <port>9000</port>
+    </replica>
+    <replica>
+      <default_database>graphite</default_database>
+      <host>172.26.97.29</host>
+      <port>9000</port>
+    </replica>
+  </shard>
+<hmrc_data_cluster>"""
+
+        zookeeper.set.assert_called_with('clickhouse.config.remote_servers', remote_servers_xml)
+
 
