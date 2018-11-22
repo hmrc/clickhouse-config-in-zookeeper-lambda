@@ -21,9 +21,15 @@ class GetZookeeperClient(unittest.TestCase):
 
         ec2_client.describe_network_interfaces.assert_called_with(Filters=[
             {
-                'Name': 'tag:Component',
-                'Values': [
-                    'telemetry-zookeeper'
+                "Name": "tag:Component",
+                "Values": [
+                    "telemetry-zookeeper"
+                ]
+            },
+            {
+                "Name": "status",
+                "Values": [
+                    "in-use"
                 ]
             }
         ])
@@ -229,9 +235,15 @@ class GetClickhouseClusterDefinition(unittest.TestCase):
 
         ec2_client.describe_instances.assert_called_with(Filters=[
             {
-                'Name': 'tag-key',
-                'Values': [
-                    'clickhouse-server'
+                "Name": "tag-key",
+                "Values": [
+                    "clickhouse-server"
+                ]
+            },
+            {
+                "Name": "instance-state-name",
+                "Values": [
+                    "running"
                 ]
             }
         ])

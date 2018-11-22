@@ -26,18 +26,30 @@ def lambda_handler(event, context):
 def get_clickhouse_cluster_definition(ec2_client):
     response = ec2_client.describe_instances(Filters=[
         {
-            'Name': 'tag-key',
-            'Values': [
-                'clickhouse-server'
+            "Name": "tag-key",
+            "Values": [
+                "clickhouse-server"
+            ]
+        },
+        {
+            "Name": "instance-state-name",
+            "Values": [
+                "running"
             ]
         }
     ])
 
-    result = {}
+    shards_to_instances = {}
 
-    for i in response['Reservations']['Instances']:
-        filter(lambda x: x['Key'] == 'shard_name', i['Tags'])[0]
-        result[i['Tags']] = my_dict.get(some_key, 0) + 1
+    for r in response['Reservations']:
+        for i in r['Instances']:
+            shard_tag = next(tag for tag in i['Tags'] if tag['Key'] == 'shard_name')
+            if (shard_tag != None):
+                shard_name = shard_tag['Value']
+                ips = shards_to_instances.get(shard_name, list())
+                ips.append(i['PrivateIpAddress'])
+                shards_to_instances[shard_name] = ips
+    return shards_to_instances
 
 
 def get_zookeeper_client(ec2_client):
@@ -46,6 +58,12 @@ def get_zookeeper_client(ec2_client):
             "Name": "tag:Component",
             "Values": [
                 "telemetry-zookeeper"
+            ]
+        },
+        {
+            "Name": "status",
+            "Values": [
+                "in-use"
             ]
         }
     ])
