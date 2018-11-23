@@ -1,4 +1,4 @@
-from clickhouse_config_in_zookeeper import lambda_handler, get_zookeeper_client, get_ec2_client, get_clickhouse_cluster_definition
+from clickhouse_config_in_zookeeper import lambda_handler, get_zookeeper_client, get_ec2_client, get_clickhouse_cluster_definition, get_graphite_rollup_xml
 from unittest.mock import patch, MagicMock
 import unittest, json, boto3
 
@@ -262,7 +262,8 @@ class LambdaHandler(unittest.TestCase):
 
         lambda_handler({}, {})
 
-        zookeeper.ensure_path.assert_called_with('clickhouse.config.remote_servers')
+        zookeeper.ensure_path.assert_any_call('clickhouse.config.remote_servers')
+        zookeeper.ensure_path.assert_any_call('clickhouse.config.graphite_rollup')
 
     @patch('clickhouse_config_in_zookeeper.get_clickhouse_cluster_definition', return_value='pumpkins')
     @patch('clickhouse_config_in_zookeeper.get_zookeeper_client')
@@ -310,6 +311,52 @@ class LambdaHandler(unittest.TestCase):
   </shard>
 </hmrc_data_cluster>"""
 
-        zookeeper.set.assert_called_with('clickhouse.config.remote_servers', remote_servers_xml)
+        graphite_rollup_xml = get_graphite_rollup_xml()
+
+        zookeeper.set.assert_any_call('clickhouse.config.remote_servers', remote_servers_xml)
+        zookeeper.set.assert_any_call('clickhouse.config.graphite_rollup', graphite_rollup_xml)
 
 
+class GetGraphiteRollupXML(unittest.TestCase):
+
+    def test_get_graphite_rollup_xml(self):
+        graphite_rollup = get_graphite_rollup_xml()
+
+        graphite_rollup_xml = b"""        <path_column_name>Path</path_column_name>
+        <time_column_name>Time</time_column_name>
+        <value_column_name>Value</value_column_name>
+        <version_column_name>Timestamp</version_column_name>
+        <mongo>
+            <regexp>^collectd\..*\.mongo-.*\.(file_size-data|file_size-index|file_size-storage|gauge-collections|gauge-indexes|gauge-num_extents|gauge-object_count)$</regexp>
+            <function>avg</function>
+            <retention>
+                <age>0</age>
+                <precision>1200</precision>
+            </retention>
+        </mongo>
+        <default>
+            <function>avg</function>
+            <retention>
+                <age>0</age>
+                <precision>60</precision>
+            </retention>
+            <retention>
+                <age>604800</age>
+                <precision>600</precision>
+            </retention>
+        </default>"""
+
+        self.assertEqual(graphite_rollup_xml, graphite_rollup)
+
+class GetEC2Client(unittest.TestCase):
+
+    @patch('clickhouse_config_in_zookeeper.get_ec2_client')
+    @patch('clickhouse_config_in_zookeeper.boto3')
+    def test_check_get_ec2_client_returns_correct_type_of_object(self, mock_boto3, mock_get_ec2_client):
+        expected_response = MagicMock()
+        mock_boto3.client.return_value = expected_response
+
+        ec2 = get_ec2_client()
+
+        mock_boto3.client.assert_called_with('ec2')
+        self.assertEqual(expected_response, ec2)

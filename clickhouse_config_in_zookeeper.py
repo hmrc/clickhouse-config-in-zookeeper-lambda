@@ -6,6 +6,7 @@ import lxml.etree as et
 logger = logging.getLogger('sensu_pagerduty_heartbeat')
 logger.setLevel(logging.INFO)
 
+
 def lambda_handler(event, context):
     # Get zookeeper IPs from ec2
     # Get clickhouse-server IPs and shards from ec2
@@ -14,28 +15,19 @@ def lambda_handler(event, context):
 
     ec2 = get_ec2_client()
     zookeeper = get_zookeeper_client(ec2)
+
     remote_server_path = 'clickhouse.config.remote_servers'
+    graphite_rollup_path = 'clickhouse.config.graphite_rollup'
+
     zookeeper.ensure_path(remote_server_path)
+    zookeeper.ensure_path(graphite_rollup_path)
 
-    xml = et.Element('hmrc_data_cluster')
-    cluster_definition = get_clickhouse_cluster_definition(ec2)
-    for key, replicas in cluster_definition.items():
-        shard_element = et.SubElement(xml, 'shard')
-        internal_replication_element = et.SubElement(shard_element, 'internal_replication')
-        internal_replication_element.text = 'true'
-        for replica in replicas:
-            replica_element = et.SubElement(shard_element, 'replica')
-            default_database_element = et.SubElement(replica_element, 'default_database')
-            default_database_element.text = 'graphite'
-            host_element = et.SubElement(replica_element, 'host')
-            host_element.text = replica
-            port_element = et.SubElement(replica_element, 'port')
-            port_element.text = '9000'
+    remote_servers = generate_remote_servers_xml(ec2)
+    graphite_rollup = get_graphite_rollup_xml()
 
+    zookeeper.set(remote_server_path, remote_servers)
+    zookeeper.set(graphite_rollup_path, graphite_rollup)
 
-    xmlstr = et.tostring(xml, encoding='utf8', method='xml', pretty_print=True).rstrip()
-
-    zookeeper.set(remote_server_path, xmlstr)
 
 def get_clickhouse_cluster_definition(ec2_client):
     response = ec2_client.describe_instances(Filters=[
@@ -57,7 +49,8 @@ def get_clickhouse_cluster_definition(ec2_client):
 
     for r in response['Reservations']:
         for i in r['Instances']:
-            shard_tag = next(tag for tag in i['Tags'] if tag['Key'] == 'shard_name')
+            shard_tag = next(tag for tag in i['Tags']
+                             if tag['Key'] == 'shard_name')
             shard_name = shard_tag['Value']
             ips = shards_to_instances.get(shard_name, list())
             ips.append(i['PrivateIpAddress'])
@@ -80,10 +73,60 @@ def get_zookeeper_client(ec2_client):
             ]
         }
     ])
-    ips = [ i['PrivateIpAddress'] for i in response['NetworkInterfaces']]
+    ips = [i['PrivateIpAddress'] for i in response['NetworkInterfaces']]
     zk = KazooClient(hosts=ips)
     zk.start()
     return zk
+
+
+def generate_remote_servers_xml(ec2):
+    remote_servers = et.Element('hmrc_data_cluster')
+    cluster_definition = get_clickhouse_cluster_definition(ec2)
+    for _, replicas in cluster_definition.items():
+        shard_tag = et.SubElement(remote_servers, 'shard')
+        internal_replication_tag = et.SubElement(shard_tag,
+                                                 'internal_replication')
+        internal_replication_tag.text = 'true'
+        for replica in replicas:
+            replica_tag = et.SubElement(shard_tag, 'replica')
+            default_database_tag = et.SubElement(replica_tag,
+                                                 'default_database')
+            default_database_tag.text = 'graphite'
+            host_tag = et.SubElement(replica_tag, 'host')
+            host_tag.text = replica
+            port_tag = et.SubElement(replica_tag, 'port')
+            port_tag.text = '9000'
+
+    return et.tostring(remote_servers, encoding='utf8',
+                       method='xml', pretty_print=True).rstrip()
+
+
+def get_graphite_rollup_xml():
+    xml = b"""        <path_column_name>Path</path_column_name>
+        <time_column_name>Time</time_column_name>
+        <value_column_name>Value</value_column_name>
+        <version_column_name>Timestamp</version_column_name>
+        <mongo>
+            <regexp>^collectd\..*\.mongo-.*\.(file_size-data|file_size-index|file_size-storage|gauge-collections|gauge-indexes|gauge-num_extents|gauge-object_count)$</regexp>
+            <function>avg</function>
+            <retention>
+                <age>0</age>
+                <precision>1200</precision>
+            </retention>
+        </mongo>
+        <default>
+            <function>avg</function>
+            <retention>
+                <age>0</age>
+                <precision>60</precision>
+            </retention>
+            <retention>
+                <age>604800</age>
+                <precision>600</precision>
+            </retention>
+        </default>"""
+    return xml
+
 
 def get_ec2_client():
     return boto3.client('ec2')
