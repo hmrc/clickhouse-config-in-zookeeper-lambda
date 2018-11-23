@@ -308,7 +308,7 @@ class LambdaHandler(unittest.TestCase):
       <port>9000</port>
     </replica>
   </shard>
-<hmrc_data_cluster>"""
+</hmrc_data_cluster>"""
 
         zookeeper.set.assert_called_with('clickhouse.config.remote_servers', remote_servers_xml)
 
