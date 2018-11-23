@@ -1,13 +1,13 @@
 from clickhouse_config_in_zookeeper import lambda_handler, get_zookeeper_client, get_ec2_client, get_clickhouse_cluster_definition
 from unittest.mock import patch, MagicMock
-import unittest
+import unittest, json, boto3
 
 class GetZookeeperClient(unittest.TestCase):
 
     @patch('clickhouse_config_in_zookeeper.KazooClient')
     def test_gets_network_interfaces_for_telemetry_zookeeper_and_creates_kazoo_client_with_ips(self, mock_kazoo_constructor):
-        mock_kazzoo_client = MagicMock()
-        mock_kazoo_constructor.return_value = mock_kazzoo_client
+        mock_kazoo_client = MagicMock()
+        mock_kazoo_constructor.return_value = mock_kazoo_client
         ec2_client = MagicMock()
         ec2_client.describe_network_interfaces = MagicMock(return_value={
             'NetworkInterfaces': [
@@ -17,7 +17,7 @@ class GetZookeeperClient(unittest.TestCase):
             ]
         })
 
-        self.assertEqual(get_zookeeper_client(ec2_client), mock_kazzoo_client)
+        self.assertEqual(get_zookeeper_client(ec2_client), mock_kazoo_client)
 
         ec2_client.describe_network_interfaces.assert_called_with(Filters=[
             {
@@ -33,7 +33,7 @@ class GetZookeeperClient(unittest.TestCase):
                 ]
             }
         ])
-        mock_kazzoo_client.start.assert_called_once()
+        mock_kazoo_client.start.assert_called_once()
         mock_kazoo_constructor.assert_called_with(hosts=['172.26.35.126', '172.26.101.56', '172.26.38.168'])
 
 

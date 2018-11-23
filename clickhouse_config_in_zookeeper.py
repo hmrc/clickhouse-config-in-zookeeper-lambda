@@ -24,15 +24,18 @@ def lambda_handler(event, context):
         internal_replication_element = et.SubElement(shard_element, 'internal_replication')
         internal_replication_element.text = 'true'
         for replica in replicas:
-            host_element = et.SubElement(shard_element, 'host')
+            replica_element = et.SubElement(shard_element, 'replica')
+            default_database_element = et.SubElement(replica_element, 'default_database')
+            default_database_element.text = 'graphite'
+            host_element = et.SubElement(replica_element, 'host')
             host_element.text = replica
+            port_element = et.SubElement(replica_element, 'port')
+            port_element.text = '9000'
 
 
-    xmlstr = et.tostring(xml, encoding='utf8', method='xml', pretty_print=True)
+    xmlstr = et.tostring(xml, encoding='utf8', method='xml', pretty_print=True).rstrip()
 
     zookeeper.set(remote_server_path, xmlstr)
-
-    return 'Hello World'
 
 def get_clickhouse_cluster_definition(ec2_client):
     response = ec2_client.describe_instances(Filters=[
