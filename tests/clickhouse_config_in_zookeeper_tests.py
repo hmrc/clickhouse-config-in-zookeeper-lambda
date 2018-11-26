@@ -358,5 +358,5 @@ class GetEC2Client(unittest.TestCase):
 
         ec2 = get_ec2_client()
 
-        mock_boto3.client.assert_called_with('ec2')
+        mock_boto3.client.assert_called_with('ec2', 'eu-west-2')
         self.assertEqual(expected_response, ec2)

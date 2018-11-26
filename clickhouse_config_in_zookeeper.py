@@ -42,7 +42,7 @@ def lambda_handler(event, context):
     zookeeper.set(graphite_rollup_path, graphite_rollup)
     logger.debug('check graphite_rollup injected successfully: ' +
                  zookeeper.get(graphite_rollup_path))
-    
+
     zookeeper.stop()
     logger.debug('Disconnected from zookeeper.')
 
@@ -77,21 +77,23 @@ def get_clickhouse_cluster_definition(ec2_client):
 
 
 def get_zookeeper_client(ec2_client):
-    response = ec2_client.describe_network_interfaces(Filters=[
-        {
-            "Name": "tag:Component",
-            "Values": [
-                "telemetry-zookeeper"
-            ]
-        },
-        {
-            "Name": "status",
-            "Values": [
-                "in-use"
-            ]
-        }
-    ])
-    logger.debug('get_zookeeper_client response: ' + response)
+    response = ec2_client.describe_network_interfaces(
+        Filters=[
+            {
+                "Name": "tag:Component",
+                "Values": [
+                    "telemetry-zookeeper"
+                ]
+            },
+            {
+                "Name": "status",
+                "Values": [
+                    "in-use"
+                ]
+            }
+        ]
+    )
+    logger.debug('get_zookeeper_client response: ' + str(response))
     ips = [i['PrivateIpAddress'] for i in response['NetworkInterfaces']]
     zk = KazooClient(hosts=ips)
     logger.debug('Zookeeper kazoo client: ' + str(zk))
@@ -150,4 +152,4 @@ def get_graphite_rollup_xml():
 
 
 def get_ec2_client():
-    return boto3.client('ec2')
+    return boto3.client('ec2', 'eu-west-2')
