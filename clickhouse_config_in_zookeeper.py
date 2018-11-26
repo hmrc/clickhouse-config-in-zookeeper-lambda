@@ -17,7 +17,7 @@ def lambda_handler(event, context):
     logger.debug('get_ec2_client successful')
 
     zookeeper = get_zookeeper_client(ec2)
-    logger.debug('get_zookeeper_client successful' )
+    logger.debug('get_zookeeper_client successful')
 
     remote_server_path = 'clickhouse.config.remote_servers'
     graphite_rollup_path = 'clickhouse.config.graphite_rollup'
@@ -37,7 +37,7 @@ def lambda_handler(event, context):
     logger.debug('got graphite_rollup xml')
 
     zookeeper.set(remote_server_path, remote_servers)
-    logger.debug('remote_servers injected successfully)
+    logger.debug('remote_servers injected successfully')
     zookeeper.set(graphite_rollup_path, graphite_rollup)
     logger.debug('graphite_rollup injected successfully')
 
