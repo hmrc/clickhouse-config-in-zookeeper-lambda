@@ -20,7 +20,7 @@ def lambda_handler(event, context):
 
     graphite_rollup_path, remote_server_path = ensure_paths_exist(zookeeper)
 
-    remote_server_xml = generate_remote_servers(ec2)
+    remote_server_xml, cluster_definition = generate_remote_servers_xml(ec2)
 
     graphite_rollup = get_graphite_rollup_xml()
 
@@ -33,7 +33,9 @@ def lambda_handler(event, context):
 
     zookeeper.stop()
     log.debug('Disconnected from zookeeper.')
-    return remote_server_xml
+    return {
+        'cluster_definition': cluster_definition
+    }
 
 
 def ensure_paths_exist(zookeeper):
@@ -103,7 +105,7 @@ def get_zookeeper_client(ec2_client):
     return zk
 
 
-def generate_remote_servers(ec2):
+def generate_remote_servers_xml(ec2):
     remote_servers = et.Element('hmrc_data_cluster')
     cluster_definition = get_clickhouse_cluster_definition(ec2)
     for _, replicas in cluster_definition.items():
@@ -124,8 +126,8 @@ def generate_remote_servers(ec2):
     remote_server_xml = et.tostring(remote_servers, encoding='utf8',
                                     method='xml', pretty_print=True).rstrip()
     log.info("Generated remote_servers xml for cluster {0}"
-              .format(cluster_definition))
-    return remote_server_xml
+             .format(cluster_definition))
+    return remote_server_xml, cluster_definition
 
 
 def get_graphite_rollup_xml():

@@ -315,7 +315,7 @@ class LambdaHandler(unittest.TestCase):
 
         zookeeper.set.assert_any_call('clickhouse.config.remote_servers', remote_servers_xml)
         zookeeper.set.assert_any_call('clickhouse.config.graphite_rollup', graphite_rollup_xml)
-        self.assertEqual(result, remote_servers_xml)
+        self.assertEqual(result, {'cluster_definition': shard_config})
 
 
 class GetGraphiteRollupXML(unittest.TestCase):
