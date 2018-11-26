@@ -14,10 +14,10 @@ def lambda_handler(event, context):
     # Write graphite-rollup config to Zookeeper
 
     ec2 = get_ec2_client()
-    logger.debug('get_ec2_client: ' + str(ec2))
+    logger.debug('get_ec2_client successful')
 
     zookeeper = get_zookeeper_client(ec2)
-    logger.debug('get_zookeeper_client: ' + str(zookeeper))
+    logger.debug('get_zookeeper_client successful' )
 
     remote_server_path = 'clickhouse.config.remote_servers'
     graphite_rollup_path = 'clickhouse.config.graphite_rollup'
@@ -31,17 +31,15 @@ def lambda_handler(event, context):
                  str(zookeeper.exists(graphite_rollup_path)))
 
     remote_servers = generate_remote_servers_xml(ec2)
-    logger.debug('generated remote_servers xml: ' + str(remote_servers))
+    logger.debug('generated remote_servers xml')
 
     graphite_rollup = get_graphite_rollup_xml()
-    logger.debug('graphite_rollup xml: ' + str(graphite_rollup))
+    logger.debug('got graphite_rollup xml')
 
     zookeeper.set(remote_server_path, remote_servers)
-    logger.debug('check remote_servers injected successfully: ' +
-                 zookeeper.get(remote_server_path))
+    logger.debug('remote_servers injected successfully)
     zookeeper.set(graphite_rollup_path, graphite_rollup)
-    logger.debug('check graphite_rollup injected successfully: ' +
-                 zookeeper.get(graphite_rollup_path))
+    logger.debug('graphite_rollup injected successfully')
 
     zookeeper.stop()
     logger.debug('Disconnected from zookeeper.')
