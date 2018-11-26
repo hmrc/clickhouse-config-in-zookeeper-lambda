@@ -280,7 +280,7 @@ class LambdaHandler(unittest.TestCase):
         zookeeper = MagicMock()
         mock_get_zookeeper_client.return_value = zookeeper
 
-        lambda_handler({}, {})
+        result = lambda_handler({}, {})
 
         remote_servers_xml = b"""<hmrc_data_cluster>
   <shard>
@@ -315,6 +315,7 @@ class LambdaHandler(unittest.TestCase):
 
         zookeeper.set.assert_any_call('clickhouse.config.remote_servers', remote_servers_xml)
         zookeeper.set.assert_any_call('clickhouse.config.graphite_rollup', graphite_rollup_xml)
+        self.assertEqual(result, remote_servers_xml)
 
 
 class GetGraphiteRollupXML(unittest.TestCase):
