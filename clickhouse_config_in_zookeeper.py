@@ -3,8 +3,8 @@ import boto3
 from kazoo.client import KazooClient
 import lxml.etree as et
 
-logger = logging.getLogger('clickhouse_config_in_zookeeper')
-logger.setLevel(logging.DEBUG)
+log = logging.getLogger('clickhouse_config_in_zookeeper')
+log.setLevel(logging.DEBUG)
 
 
 def lambda_handler(event, context):
@@ -14,35 +14,38 @@ def lambda_handler(event, context):
     # Write graphite-rollup config to Zookeeper
 
     ec2 = get_ec2_client()
-    logger.debug('get_ec2_client successful')
+    log.debug('get_ec2_client successful')
 
     zookeeper = get_zookeeper_client(ec2)
-    logger.debug('get_zookeeper_client successful')
 
-    remote_server_path = 'clickhouse.config.remote_servers'
-    graphite_rollup_path = 'clickhouse.config.graphite_rollup'
+    graphite_rollup_path, remote_server_path = ensure_paths_exist(zookeeper)
 
-    zookeeper.ensure_path(remote_server_path)
-    logger.debug('remote_server_path: ' +
-                 str(zookeeper.exists(graphite_rollup_path)))
-
-    zookeeper.ensure_path(graphite_rollup_path)
-    logger.debug('graphite_rollup_path: ' +
-                 str(zookeeper.exists(graphite_rollup_path)))
-
-    remote_servers = generate_remote_servers_xml(ec2)
-    logger.debug('generated remote_servers xml')
+    remote_server_xml = generate_remote_servers(ec2)
 
     graphite_rollup = get_graphite_rollup_xml()
-    logger.debug('got graphite_rollup xml')
 
-    zookeeper.set(remote_server_path, remote_servers)
-    logger.debug('remote_servers injected successfully')
+    zookeeper.set(remote_server_path, remote_server_xml)
+    log.info(
+        'remote_servers added to Zookeeper successfully for cluster definition'
+    )
     zookeeper.set(graphite_rollup_path, graphite_rollup)
-    logger.debug('graphite_rollup injected successfully')
+    log.debug('graphite_rollup added to Zookeeper successfully')
 
     zookeeper.stop()
-    logger.debug('Disconnected from zookeeper.')
+    log.debug('Disconnected from zookeeper.')
+    return remote_server_xml
+
+
+def ensure_paths_exist(zookeeper):
+    remote_server_path = 'clickhouse.config.remote_servers'
+    graphite_rollup_path = 'clickhouse.config.graphite_rollup'
+    zookeeper.ensure_path(remote_server_path)
+    log.debug("{0} exists: {1}".format(remote_server_path,
+                                       zookeeper.exists(remote_server_path)))
+    zookeeper.ensure_path(graphite_rollup_path)
+    log.debug("{0} exists: {1}".format(graphite_rollup_path,
+                                       zookeeper.exists(graphite_rollup_path)))
+    return graphite_rollup_path, remote_server_path
 
 
 def get_clickhouse_cluster_definition(ec2_client):
@@ -91,16 +94,16 @@ def get_zookeeper_client(ec2_client):
             }
         ]
     )
-    logger.debug('get_zookeeper_client response: ' + str(response))
     ips = [i['PrivateIpAddress'] for i in response['NetworkInterfaces']]
+    log.debug("Found Zookeeper clients {0}".format(ips))
     zk = KazooClient(hosts=ips)
-    logger.debug('Zookeeper kazoo client: ' + str(zk))
+    log.debug('Created Zookeeper kazoo client')
     zk.start()
-    logger.debug('Connection to zookeeper established.')
+    log.debug('Connection to zookeeper established.')
     return zk
 
 
-def generate_remote_servers_xml(ec2):
+def generate_remote_servers(ec2):
     remote_servers = et.Element('hmrc_data_cluster')
     cluster_definition = get_clickhouse_cluster_definition(ec2)
     for _, replicas in cluster_definition.items():
@@ -118,8 +121,11 @@ def generate_remote_servers_xml(ec2):
             port_tag = et.SubElement(replica_tag, 'port')
             port_tag.text = '9000'
 
-    return et.tostring(remote_servers, encoding='utf8',
-                       method='xml', pretty_print=True).rstrip()
+    remote_server_xml = et.tostring(remote_servers, encoding='utf8',
+                                    method='xml', pretty_print=True).rstrip()
+    log.info("Generated remote_servers xml for cluster {0}"
+              .format(cluster_definition))
+    return remote_server_xml
 
 
 def get_graphite_rollup_xml():
