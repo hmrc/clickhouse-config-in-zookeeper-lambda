@@ -44,7 +44,7 @@ def lambda_handler(event, context):
                  zookeeper.get(graphite_rollup_path))
     
     zookeeper.stop()
-    logger.debug('stopped zookeeper')
+    logger.debug('Disconnected from zookeeper.')
 
 
 def get_clickhouse_cluster_definition(ec2_client):
@@ -91,9 +91,12 @@ def get_zookeeper_client(ec2_client):
             ]
         }
     ])
+    logger.debug('get_zookeeper_client response: ' + response)
     ips = [i['PrivateIpAddress'] for i in response['NetworkInterfaces']]
     zk = KazooClient(hosts=ips)
+    logger.debug('Zookeeper kazoo client: ' + str(zk))
     zk.start()
+    logger.debug('Connection to zookeeper established.')
     return zk
 
 
