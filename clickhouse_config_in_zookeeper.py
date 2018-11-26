@@ -3,8 +3,8 @@ import boto3
 from kazoo.client import KazooClient
 import lxml.etree as et
 
-logger = logging.getLogger('sensu_pagerduty_heartbeat')
-logger.setLevel(logging.INFO)
+logger = logging.getLogger('clickhouse_config_in_zookeeper')
+logger.setLevel(logging.DEBUG)
 
 
 def lambda_handler(event, context):
@@ -14,19 +14,37 @@ def lambda_handler(event, context):
     # Write graphite-rollup config to Zookeeper
 
     ec2 = get_ec2_client()
+    logger.debug('get_ec2_client: ' + str(ec2))
+
     zookeeper = get_zookeeper_client(ec2)
+    logger.debug('get_zookeeper_client: ' + str(zookeeper))
 
     remote_server_path = 'clickhouse.config.remote_servers'
     graphite_rollup_path = 'clickhouse.config.graphite_rollup'
 
     zookeeper.ensure_path(remote_server_path)
+    logger.debug('remote_server_path: ' +
+                 str(zookeeper.exists(graphite_rollup_path)))
+
     zookeeper.ensure_path(graphite_rollup_path)
+    logger.debug('graphite_rollup_path: ' +
+                 str(zookeeper.exists(graphite_rollup_path)))
 
     remote_servers = generate_remote_servers_xml(ec2)
+    logger.debug('generated remote_servers xml: ' + str(remote_servers))
+
     graphite_rollup = get_graphite_rollup_xml()
+    logger.debug('graphite_rollup xml: ' + str(graphite_rollup))
 
     zookeeper.set(remote_server_path, remote_servers)
+    logger.debug('check remote_servers injected successfully: ' +
+                 zookeeper.get(remote_server_path))
     zookeeper.set(graphite_rollup_path, graphite_rollup)
+    logger.debug('check graphite_rollup injected successfully: ' +
+                 zookeeper.get(graphite_rollup_path))
+    
+    zookeeper.stop()
+    logger.debug('stopped zookeeper')
 
 
 def get_clickhouse_cluster_definition(ec2_client):
