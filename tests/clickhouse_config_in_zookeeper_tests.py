@@ -327,14 +327,14 @@ class GetGraphiteRollupXML(unittest.TestCase):
         <time_column_name>Time</time_column_name>
         <value_column_name>Value</value_column_name>
         <version_column_name>Timestamp</version_column_name>
-        <mongo>
+        <pattern>
             <regexp>^collectd\..*\.mongo-.*\.(file_size-data|file_size-index|file_size-storage|gauge-collections|gauge-indexes|gauge-num_extents|gauge-object_count)$</regexp>
             <function>avg</function>
             <retention>
                 <age>0</age>
                 <precision>1200</precision>
             </retention>
-        </mongo>
+        </pattern>
         <default>
             <function>avg</function>
             <retention>
