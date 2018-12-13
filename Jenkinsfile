@@ -22,7 +22,7 @@ pipeline {
     }
     stage('Upload to s3') {
       steps {
-        sh("""for env in sandbox development qa staging integration externaltest production; do
+        sh("""for env in sandbox management development qa staging integration externaltest production; do
                 aws s3 cp clickhouse_config_in_zookeeper.zip s3://mdtp-lambda-functions-\${env}/clickhouse_config_in_zookeeper.zip --acl=bucket-owner-full-control
                 aws s3 cp clickhouse_config_in_zookeeper.zip.base64sha256 s3://mdtp-lambda-functions-\${env}/clickhouse_config_in_zookeeper.zip.base64sha256 --content-type text/plain --acl=bucket-owner-full-control
               done
