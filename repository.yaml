@@ -1,0 +1,4 @@
+leakDetectionExemptions:
+  - ruleId: 'ip_addresses'
+    filePaths:
+      - '/tests/clickhouse_config_in_zookeeper_tests.py'

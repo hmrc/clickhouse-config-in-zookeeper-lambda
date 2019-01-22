@@ -11,9 +11,9 @@ class GetZookeeperClient(unittest.TestCase):
         ec2_client = MagicMock()
         ec2_client.describe_network_interfaces = MagicMock(return_value={
             'NetworkInterfaces': [
-                {'PrivateIpAddress': '172.26.35.126'},
-                {'PrivateIpAddress': '172.26.101.56'},
-                {'PrivateIpAddress': '172.26.38.168'}
+                {'PrivateIpAddress': '192.168.1.1'},
+                {'PrivateIpAddress': '192.168.1.2'},
+                {'PrivateIpAddress': '192.168.1.3'}
             ]
         })
 
@@ -34,7 +34,7 @@ class GetZookeeperClient(unittest.TestCase):
             }
         ])
         mock_kazoo_client.start.assert_called_once()
-        mock_kazoo_constructor.assert_called_with(hosts=['172.26.35.126', '172.26.101.56', '172.26.38.168'])
+        mock_kazoo_constructor.assert_called_with(hosts=['192.168.1.1', '192.168.1.2', '192.168.1.3'])
 
 
 

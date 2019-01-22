@@ -120,5 +120,6 @@ def generate_remote_servers_xml(ec2):
              .format(cluster_definition))
     return remote_server_xml, cluster_definition
 
+
 def get_ec2_client():
     return boto3.client('ec2', 'eu-west-2')
