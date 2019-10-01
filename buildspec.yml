@@ -1,0 +1,11 @@
+version: 0.2
+phases:
+  build:
+    commands:
+      - ./run-tests.sh
+      - ./build_local.sh
+      - openssl dgst -sha256 -binary clickhouse_config_in_zookeeper.zip | openssl enc -base64 > clickhouse_config_in_zookeeper.zip.base64sha256
+artifacts:
+  files:
+    - 'clickhouse_config_in_zookeeper.zip.base64sha256'
+    - 'clickhouse_config_in_zookeeper.zip' 
