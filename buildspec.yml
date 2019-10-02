@@ -1,5 +1,9 @@
 version: 0.2
 phases:
+  install:
+    runtime-versions:
+      python: 3.7
+      docker: 18
   build:
     commands:
       - ./run-tests.sh
