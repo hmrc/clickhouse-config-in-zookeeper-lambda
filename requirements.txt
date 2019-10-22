@@ -1,4 +1,4 @@
-requests==2.18.4
+requests==2.20.0
 boto3==1.9.48
 logger==1.4
 aws==0.2.5
