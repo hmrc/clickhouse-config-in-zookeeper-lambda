@@ -2,7 +2,7 @@ version: 0.2
 phases:
   install:
     runtime-versions:
-      python: 3.7
+      python: 3.8
   build:
     commands:
       - ./run-tests.sh
@@ -11,4 +11,4 @@ phases:
 artifacts:
   files:
     - 'clickhouse_config_in_zookeeper.zip.base64sha256'
-    - 'clickhouse_config_in_zookeeper.zip' 
+    - 'clickhouse_config_in_zookeeper.zip'
