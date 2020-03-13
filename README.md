@@ -7,7 +7,7 @@ Zookeeper obtains the configuration for certain Clickhouse configuration files v
 ## Running tests
 
 The target runtime for this lambda varies from Python version 3.6 -> 3.8. Separate Dockerfiles were added to cover these
-various Python runtime versions so assurance that the tests work in all scenarios is achieved.
+various Python runtime versions so assurance that the tests work in all scenarios is achieved. 
 
 ```bash
 $ make build test
