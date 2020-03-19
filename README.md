@@ -2,7 +2,7 @@
 # clickhouse-config-in-zookeeper-lambda
 
 Zookeeper obtains the configuration for certain Clickhouse configuration files via a lambda which injects the
-'remote-servers' config into Zookeeper
+'remote-servers' config into Zookeeper 
 
 ## Running tests
 
