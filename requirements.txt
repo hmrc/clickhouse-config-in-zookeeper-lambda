@@ -5,4 +5,4 @@ aws==0.2.5
 timeout-decorator==0.4.0
 pytz==2017.3
 kazoo==2.6.0
-lxml==4.2.5
+lxml==4.6.3
